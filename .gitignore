@@ -1,0 +1,27 @@
+# OS-specific
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Python
+__pycache__/
+*.py[cod]
+
+# Ansible
+*.retry
+*.log
+inventory.ini
+
+# VS Code
+.vscode/
+
+# System files
+*.swp
+
+# Logs and temp
+*.log
+*.tmp
+*.bak
+
+# Node Exporter / Grafana outputs (if any)
+output/

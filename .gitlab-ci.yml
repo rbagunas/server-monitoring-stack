@@ -1,0 +1,24 @@
+stages:
+  - lint
+  - validate
+
+lint_ansible:
+  image: python:3.11-alpine
+  stage: lint
+  before_script:
+    - apk add --no-cache py3-pip gcc musl-dev libffi-dev openssl-dev
+    - pip install ansible-lint
+  script:
+    - ansible-lint ansible/*.yml
+
+validate_yaml:
+  image: python:3.11-alpine
+  stage: validate
+  before_script:
+    - pip install pyyaml
+  script:
+    - |
+      for file in ansible/*.yml; do
+        echo "Validating $file"
+        python3 -c "import yaml, sys; yaml.safe_load(open('$file'))" || exit 1
+      done

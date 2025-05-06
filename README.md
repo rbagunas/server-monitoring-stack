@@ -1,53 +1,59 @@
-# 🔍 Server Monitoring Stack
+# 🔍 Server Monitoring Stack with Ansible
 
-This project sets up a basic monitoring stack using **Prometheus**, **Grafana**, and **Node Exporter** with **Docker Compose**.
+This project sets up a monitoring stack using **Prometheus**, **Node Exporter**, and **Grafana** using **Ansible** for automation.
 
 ## 🎯 What It Does
 
-- Monitors system metrics using Node Exporter
-- Collects data with Prometheus
-- Visualizes metrics using Grafana
-- Includes a sample Grafana dashboard
+- Installs and configures Prometheus
+- Deploys Node Exporter on target nodes
+- Sets up Grafana with a sample dashboard
+- Automates the process using Ansible
 
 ## 🧰 Stack
 
 - Prometheus
 - Grafana
 - Node Exporter
-- Docker & Docker Compose
+- Ansible
 
 ## 📂 Project Structure
 
 ```
 server-monitoring-stack/
-├── docker-compose.yml
-├── prometheus/
-│   └── prometheus.yml
-├── grafana/
-│   └── dashboard.json
+├── ansible/
+│   ├── inventory
+│   ├── prometheus.yml
+│   ├── grafana.yml
+│   ├── node_exporter.yml
+│   └── files/
+│       └── dashboard.json
 └── README.md
 ```
 
 ## 🚀 Usage
 
-### 1. Run the stack
+### 1. Update inventory file
 
-```bash
-docker-compose up -d
+Add your target server(s) in `ansible/inventory`
+
+```
+[monitoring]
+your.server.ip ansible_user=root
 ```
 
-### 2. Access services
+### 2. Run playbooks
 
-- Grafana: [http://localhost:3000](http://localhost:3000) (user: admin / pass: admin)
-- Prometheus: [http://localhost:9090](http://localhost:9090)
-- Node Exporter: [http://localhost:9100](http://localhost:9100)
+```bash
+cd ansible
 
-### 3. Import dashboard
+ansible-playbook -i inventory prometheus.yml
+ansible-playbook -i inventory node_exporter.yml
+ansible-playbook -i inventory grafana.yml
+```
 
-In Grafana:
-- Go to **Dashboards > Import**
-- Upload `grafana/dashboard.json`
+Then access Grafana on port `:3000` of your server.
 
 ---
 
-Ideal for monitoring dev environments or learning observability tools.
+> Perfect for automating your monitoring setup on fresh servers.
+

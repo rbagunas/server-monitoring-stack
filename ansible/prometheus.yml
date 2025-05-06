@@ -1,0 +1,111 @@
+---
+- name: Deploy Prometheus on Linode LAMP Server
+  hosts: monitoring
+  become: true
+  vars:
+    prometheus_version: "3.1.0-rc.1"
+    monitoring_host: "arthon.i4projects.net"
+    monitoring_ip: "136.158.41.237"
+
+  tasks:
+    - name: Update system packages
+      ansible.builtin.apt:
+        update_cache: true
+        upgrade: dist
+        autoremove: true
+
+    - name: Install required Python packages for Ansible API calls
+      ansible.builtin.apt:
+        name: python3-requests
+        state: present
+
+    - name: Add Prometheus user
+      ansible.builtin.user:
+        name: prometheus
+        shell: /sbin/nologin
+        system: true
+        create_home: false
+
+    - name: Download Prometheus
+      ansible.builtin.get_url:
+        url: "https://github.com/prometheus/prometheus/releases/download/v{{ prometheus_version }}/prometheus-{{ prometheus_version }}.linux-amd64.tar.gz"
+        dest: "/tmp/prometheus.tar.gz"
+        mode: '0644'
+
+    - name: Extract Prometheus
+      ansible.builtin.unarchive:
+        src: "/tmp/prometheus.tar.gz"
+        dest: "/tmp"
+        remote_src: true
+
+    - name: Move Prometheus binary
+      ansible.builtin.command: mv /tmp/prometheus-{{ prometheus_version }}.linux-amd64/prometheus /etc/prometheus/
+      changed_when: false
+
+    - name: Move Prometheus promtool
+      ansible.builtin.command: mv /tmp/prometheus-{{ prometheus_version }}.linux-amd64/promtool /usr/local/bin/
+      changed_when: false
+
+    - name: Create Prometheus directories
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: prometheus
+        group: prometheus
+        mode: '0755'
+      loop:
+        - /etc/prometheus
+        - /var/lib/prometheus
+
+    - name: Move Prometheus config file
+      ansible.builtin.copy:
+        dest: /etc/prometheus/prometheus.yml
+        mode: '0644'
+        content: |
+          global:
+            scrape_interval: 15s
+
+          scrape_configs:
+            - job_name: "node"
+              static_configs:
+                - targets: ['{{ monitoring_host }}:9100']
+
+    - name: Set ownership of Prometheus directories
+      ansible.builtin.file:
+        path: "{{ item }}"
+        owner: prometheus
+        group: prometheus
+        mode: '0755'
+        recurse: true
+      loop:
+        - /etc/prometheus
+        - /var/lib/prometheus
+
+    - name: Remove existing Prometheus systemd service file
+      ansible.builtin.file:
+        path: /etc/systemd/system/prometheus.service
+        state: absent
+
+    - name: Create Prometheus systemd service
+      ansible.builtin.copy:
+        dest: /etc/systemd/system/prometheus.service
+        mode: '0644'
+        content: |
+          [Unit]
+          Description=Prometheus
+          Wants=network-online.target
+          After=network-online.target
+
+          [Service]
+          ExecStart=/etc/prometheus/prometheus --config.file=/etc/prometheus/prometheus.yml
+          Restart=always
+
+          [Install]
+          WantedBy=multi-user.target
+
+    - name: Reload systemd and start Prometheus
+      ansible.builtin.systemd:
+        daemon_reload: true
+        name: prometheus
+        enabled: true
+        state: restarted

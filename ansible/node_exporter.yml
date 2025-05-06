@@ -1,0 +1,62 @@
+---
+- name: Install Node Exporter on Linode LAMP Server
+  hosts: monitoring
+  become: true
+  vars:
+    node_exporter_version: "1.8.2"
+
+  tasks:
+    - name: Download Node Exporter
+      ansible.builtin.get_url:
+        url: >
+          https://github.com/prometheus/node_exporter/releases/download/v{{ node_exporter_version }}/
+          node_exporter-{{ node_exporter_version }}.linux-amd64.tar.gz
+        dest: "/tmp/node_exporter.tar.gz"
+        mode: '0644'
+
+    - name: Extract Node Exporter
+      ansible.builtin.unarchive:
+        src: "/tmp/node_exporter.tar.gz"
+        dest: "/tmp"
+        remote_src: true
+
+    - name: Ensure Node Exporter directory exists
+      ansible.builtin.file:
+        path: /etc/node_exporter
+        state: directory
+        owner: root
+        group: root
+        mode: '0755'
+
+    - name: Move Node Exporter binary
+      ansible.builtin.command: mv /tmp/node_exporter-{{ node_exporter_version }}.linux-amd64/node_exporter /etc/node_exporter/
+      changed_when: false
+
+    - name: Remove existing Node Exporter systemd service file
+      ansible.builtin.file:
+        path: /etc/systemd/system/node_exporter.service
+        state: absent
+
+    - name: Create Node Exporter systemd service
+      ansible.builtin.copy:
+        dest: /etc/systemd/system/node_exporter.service
+        mode: '0644'
+        content: |
+          [Unit]
+          Description=Node Exporter
+          Wants=network-online.target
+          After=network-online.target
+
+          [Service]
+          ExecStart=/etc/node_exporter/node_exporter
+          Restart=always
+
+          [Install]
+          WantedBy=multi-user.target
+
+    - name: Reload systemd and start Node Exporter
+      ansible.builtin.systemd:
+        daemon_reload: true
+        name: node_exporter
+        enabled: true
+        state: started

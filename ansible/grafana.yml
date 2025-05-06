@@ -1,0 +1,32 @@
+---
+- name: Install Grafana
+  hosts: monitoring
+  become: true
+  vars:
+    grafana_version: "11.4.0"
+
+  tasks:
+    - name: Install dependencies for Grafana
+      ansible.builtin.apt:
+        name:
+          - adduser
+          - libfontconfig1
+          - musl
+        state: present
+
+    - name: Download Grafana
+      ansible.builtin.get_url:
+        url: "https://dl.grafana.com/enterprise/release/grafana-enterprise_{{ grafana_version }}_amd64.deb"
+        dest: "/tmp/grafana.deb"
+        mode: '0644'
+
+    - name: Install Grafana
+      ansible.builtin.apt:
+        deb: "/tmp/grafana.deb"
+
+    - name: Enable and start Grafana
+      ansible.builtin.systemd:
+        daemon_reload: true
+        name: grafana-server
+        enabled: true
+        state: started

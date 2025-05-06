@@ -1,0 +1,35 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "type": "dashboard"
+      }
+    ]
+  },
+  "panels": [
+    {
+      "type": "gauge",
+      "title": "CPU Usage",
+      "datasource": null,
+      "targets": [
+        {
+          "expr": "100 - (avg by (instance) (irate(node_cpu_seconds_total{mode='idle'}[5m])) * 100)",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 0
+      }
+    }
+  ],
+  "title": "System Monitoring",
+  "version": 1
+}
